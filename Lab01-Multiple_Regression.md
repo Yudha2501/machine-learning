@@ -114,17 +114,65 @@ print("Predicted power (W):", round(predict_power(rpm, load), 2))
 3. Apa yang berubah ketika hanya RPM dinaikkan, sementara beban tetap?
 4. Jelaskan mengapa langkah ini disebut **inference**, bukan training.
 
-**jawab**  
-1 , 2. RPM 950, Beban 40 menghasilkan daya prediksi sebesar 160.17 W.  
-RPM 1450, Beban 35 menghasilkan daya prediksi sebesar 202.69 W.  
-RPM 1850, Beban 90 menghasilkan daya prediksi sebesar 297.25 W.  
-3. Daya listrik yang diprediksi akan meningkat secara linear seiring bertambahnya putaran mesin.
- Berdasarkan persamaan, setiap kenaikan 1 RPM (sementara beban dikunci) akan menambah prediksi daya
- sebesar nilai koefisien b1, yaitu sekitar 0.095 W.  
-4. Langkah ini diklasifikasikan sebagai inference karena sistem hanya menerapkan parameter regresi 
-yang sudah diketahui (b0, b1, dan b2) ke dalam persamaan untuk memprediksi data baru. Pada tahap ini,
- program tidak melakukan perhitungan least squares, tidak meminimalkan error, dan tidak mempelajari
- data historis untuk memperbarui koefisien.
+**jawab** 
+
+hasil run 
+
+MPY: soft reboot
+RPM: 950
+Load (%): 40
+Predicted power (W): 160.17
+--------------------
+RPM: 1450
+Load (%): 35
+Predicted power (W): 202.69
+--------------------
+RPM: 1850
+Load (%): 90
+Predicted power (W): 297.25
+--------------------
+>>>  
+# Mission-06B — Multiple Linear Regression on ESP32
+
+## Eksperimen A — Inference Model Regresi Linear Berganda
+
+### 1. Tujuan
+Menjalankan model Multiple Linear Regression pada ESP32 menggunakan MicroPython untuk memprediksi daya mesin berdasarkan nilai RPM dan beban (*load*).
+
+### 2. Persamaan Model
+Model menggunakan persamaan regresi linear berganda:
+
+\[
+\hat{y} = b_0 + b_1(\mathrm{RPM}) + b_2(\mathrm{Load})
+\]
+
+Dengan koefisien:
+- Intercept (\(b_0\)) = 28.57969737
+- Koefisien RPM (\(b_1\)) = 0.09530851
+- Koefisien Load (\(b_2\)) = 1.02609079
+
+### 3. Prosedur Pengujian
+1. Menghubungkan ESP32 ke laptop menggunakan kabel USB.
+2. Membuka Thonny dan memilih interpreter MicroPython (ESP32).
+3. Menjalankan program `mission06b.py`.
+4. Mengamati hasil prediksi daya pada Shell Thonny.
+
+### 4. Hasil Pengujian
+
+| RPM | Load (%) | Prediksi Daya (W) |
+|---:|---:|---:|
+| 950 | 40 | 160.17 |
+| 1450 | 35 | 202.69 |
+| 1850 | 90 | 297.25 |
+
+### 5. Analisis
+Berdasarkan hasil pengujian, program berhasil melakukan prediksi daya menggunakan ESP32 dan MicroPython. Pada RPM 950 dengan beban 40%, model menghasilkan prediksi daya sebesar 160.17 W. Pada RPM 1450 dengan beban 35%, prediksi daya sebesar 202.69 W. Sementara itu, pada RPM 1850 dengan beban 90%, prediksi daya sebesar 297.25 W.
+
+Model menggunakan koefisien yang telah tersedia sehingga ESP32 hanya menjalankan proses inference, yaitu menghitung prediksi dari input RPM dan beban. Pada eksperimen ini belum dilakukan proses training untuk menghitung koefisien baru.
+
+### 6. Kesimpulan
+Eksperimen A berhasil dijalankan pada ESP32 menggunakan MicroPython. Program dapat menghitung prediksi daya berdasarkan RPM dan beban menggunakan persamaan Multiple Linear Regression tanpa memerlukan library machine learning seperti Scikit-learn. Hasil pengujian sesuai dengan output yang diperoleh pada Shell Thonny.
+
 
 ---
 
@@ -233,16 +281,58 @@ $$
 4. Mengapa regresi dengan dua fitur memerlukan paling sedikit tiga parameter?
 
 **jawab**  
-1. $b_0$ (Intercept): 28.579964 $b_1$ (Koefisien RPM): 95.30816 / 1000 = 0.09530816 $b_2$ (Koefisien Beban): 102.60946 / 100 = 1.0260946  
-2. Hasil prediksi pada test set sangat identik dengan Eksperimen A:  
-RPM 950, Beban 40: Prediksi 160.17 W  
-RPM 1450, Beban 35: Prediksi 202.69 W  
-RPM 1850, Beban 90: Prediksi 297.25 W  
-Kecocokan ini membuktikan bahwa parameter yang disetel manual pada Eksperimen A memang berasal dari proses training least squares yang sama pada data ini.
-3. MAE pada Data UjiMean Absolute Error (MAE) pada test set adalah 2.5003 W.  
-4. Alasan Dua Fitur Memerlukan Tiga Parameter
-Model regresi linear dengan dua fitur (RPM dan beban) mengikuti persamaan $y = b_0 + b_1x_1 + b_2x_2$. Persamaan ini membutuhkan tiga parameter karena $b_0$ berfungsi sebagai nilai dasar atau intercept (ketika fitur bernilai 0), sedangkan $b_1$ dan $b_2$ berfungsi sebagai bobot atau koefisien kemiringan untuk masing-masing dari kedua fitur input tersebut.
----
+hasil run
+>>> %Run -c $EDITOR_CONTENT
+
+MPY: soft reboot
+Coefficients for scaled features: [28.579964, 95.30816, 102.60946]
+Test predictions:
+RPM 950 Load 40 Actual 164 Pred 160.17
+RPM 1250 Load 65 Actual 213 Pred 214.41
+RPM 1450 Load 35 Actual 203 Pred 202.69
+RPM 1750 Load 55 Actual 258 Pred 251.8
+RPM 1850 Load 90 Actual 298 Pred 297.25
+Test MAE (W): 2.5003
+>>> 
+## Experiment B — Training Multiple Linear Regression on ESP32
+
+### Tujuan
+Melatih model Multiple Linear Regression secara langsung pada ESP32 menggunakan MicroPython tanpa menggunakan library `numpy` atau `sklearn`.
+
+### Hasil Pengujian
+Model dilatih menggunakan dua fitur input, yaitu RPM dan Load, untuk memprediksi Power. Fitur diskalakan dengan menggunakan `RPM/1000` dan `Load/100`.
+
+**Koefisien model:**
+```text
+Coefficients for scaled features:
+[28.579964, 95.30816, 102.60946]
+```
+
+**Hasil prediksi data pengujian:**
+
+| RPM | Load (%) | Power Aktual (W) | Prediksi (W) |
+|---:|---:|---:|---:|
+| 950 | 40 | 164 | 160.17 |
+| 1250 | 65 | 213 | 214.41 |
+| 1450 | 35 | 203 | 202.69 |
+| 1750 | 55 | 258 | 251.80 |
+| 1850 | 90 | 298 | 297.25 |
+
+**Mean Absolute Error (MAE):**
+```text
+Test MAE (W): 2.5003
+```
+
+### Analisis
+Model berhasil menghitung koefisien regresi menggunakan metode persamaan normal dan eliminasi Gauss pada ESP32. Hasil pengujian menunjukkan bahwa prediksi model cukup dekat dengan nilai power aktual.
+
+Nilai MAE sebesar **2.5003 W** menunjukkan bahwa rata-rata selisih absolut antara prediksi dan nilai aktual pada lima data pengujian adalah sekitar 2.5 W.
+
+Prediksi dengan selisih terbesar terdapat pada data RPM 1750 dan Load 55%, dengan nilai aktual 258 W dan prediksi 251.80 W.
+
+### Kesimpulan
+Eksperimen B berhasil. ESP32 dapat melatih model Multiple Linear Regression menggunakan MicroPython tanpa library machine learning eksternal. Penggunaan fitur RPM dan Load memungkinkan model memprediksi power berdasarkan kedua variabel tersebut dengan nilai MAE sebesar 2.5003 W pada data pengujian.
+
 
 ## Eksperimen C — Bandingkan model satu fitur vs dua fitur (±15 menit)
 
@@ -289,10 +379,45 @@ print("MAE RPM + load (W):", round(multiple_mae, 4))
 
 > Dataset praktikum ini memang dibuat agar fitur beban memberikan informasi tambahan. Jangan menyimpulkan bahwa dua fitur **selalu** lebih baik untuk setiap dataset.  
 
-**jawab**  
-1. Model dengan dua fitur (RPM + beban) menghasilkan MAE yang jauh lebih kecil pada data uji, yaitu sekitar 2.5003 W, dibandingkan dengan model satu fitur (RPM saja) yang memiliki MAE sekitar 13.0012 W.  
-2. Penambahan fitur tidak selalu meningkatkan generalisasi. Jika fitur yang ditambahkan tidak relevan, berupa noise, atau jumlah fitur terlalu banyak dibandingkan jumlah sampel data, model dapat mengalami overfitting. Kondisi ini membuat model hanya "menghafal" data training tanpa mempelajari pola sebenarnya, sehingga performa prediksinya justru memburuk saat dihadapkan pada data baru.
-3. Membandingkan error hanya pada data training bisa menyesatkan karena model yang lebih kompleks (seperti menambah fitur) secara matematis selalu cenderung menurunkan error pada data latihnya. Model bisa saja mencapai error training yang sangat rendah (mendekati nol) akibat overfitting, namun akan memberikan hasil prediksi yang sangat buruk ( error tinggi) pada data nyata yang belum pernah dilihat sebelumnya (test set). Evaluasi pada test set terpisah diperlukan untuk mengukur kemampuan prediksi dunia nyata yang sebenarnya.
+**jawab** 
+hasil run 
+MPY: soft reboot
+Coefficients for scaled features: [28.579964, 95.30816, 102.60946]
+Test predictions:
+RPM 950 Load 40 Actual 164 Pred 160.17
+RPM 1250 Load 65 Actual 213 Pred 214.41
+RPM 1450 Load 35 Actual 203 Pred 202.69
+RPM 1750 Load 55 Actual 258 Pred 251.8
+RPM 1850 Load 90 Actual 298 Pred 297.25
+Test MAE (W): 2.5003
+MAE RPM only (W): 13.0012
+MAE RPM + load (W): 2.5003
+>>> 
+## Experiment C — Comparing One-Feature and Two-Feature Models
+
+### 1. Tujuan
+Membandingkan akurasi model Simple Linear Regression yang menggunakan RPM saja dengan model Multiple Linear Regression yang menggunakan RPM dan Load.
+
+### 2. Hasil Pengujian
+
+| Model | Fitur yang Digunakan | MAE Test (W) |
+|---|---|---:|
+| Model 1 | RPM saja | 13.0012 |
+| Model 2 | RPM + Load | 2.5003 |
+
+### 3. Analisis
+Berdasarkan hasil pengujian pada ESP32, model RPM + Load menghasilkan nilai MAE yang lebih rendah dibandingkan model RPM saja.
+
+Model RPM saja menghasilkan MAE sebesar 13.0012 W, sedangkan model RPM + Load menghasilkan MAE sebesar 2.5003 W. Dengan demikian, penambahan fitur Load meningkatkan akurasi prediksi pada dataset praktikum ini.
+
+Penambahan fitur tidak selalu meningkatkan generalisasi. Jika fitur yang ditambahkan tidak relevan atau mengandung noise, performa model pada data baru dapat memburuk. Model yang terlalu kompleks juga berisiko mengalami overfitting.
+
+Membandingkan error pada data training saja dapat menyesatkan karena model yang lebih kompleks dapat menyesuaikan diri lebih baik terhadap data training, tetapi belum tentu memberikan prediksi yang baik pada data baru. Oleh karena itu, kedua model dibandingkan menggunakan test set yang sama.
+
+### 4. Kesimpulan
+Eksperimen C berhasil. Model Multiple Linear Regression dengan fitur RPM dan Load memiliki performa prediksi lebih baik daripada model yang hanya menggunakan RPM pada dataset ini. Hal tersebut dibuktikan oleh nilai MAE test yang lebih rendah, yaitu 2.5003 W dibandingkan 13.0012 W.
+
+Hasil ini menunjukkan bahwa pemilihan fitur yang relevan dapat membantu meningkatkan akurasi prediksi, tetapi penambahan fitur tidak selalu menjamin generalisasi yang lebih baik pada semua dataset.
 
 ---
 
@@ -320,21 +445,61 @@ while True:
 
 **Tugas D:** pilih RPM tetap (misalnya 1500) lalu ubah beban (20%, 50%, 80%). Apa pola perubahan prediksi? Ulangi dengan beban tetap dan RPM berubah.  
 
-**jawab**  
-RPM 1500, Beban 20%: Prediksi daya ≈ 192.06 W  
-RPM 1500, Beban 50%: Prediksi daya ≈ 222.85 W  
-RPM 1500, Beban 80%: Prediksi daya ≈ 253.63 W  
+**jawab** 
+hasil run 
+>>> %Run -c $EDITOR_CONTENT
 
-> Pola perubahan: Prediksi daya meningkat secara linear seiring bertambahnya persentase beban. Setiap kenaikan beban sebesar 1% (pada RPM yang sama), daya listrik akan naik sekitar 1.026 W. Angka ini secara presisi mewakili nilai koefisien beban ($b_2$) pada model.  
+MPY: soft reboot
+Coefficients for scaled features: [28.579964, 95.30816, 102.60946]
+Test predictions:
+RPM 950 Load 40 Actual 164 Pred 160.17
+RPM 1250 Load 65 Actual 213 Pred 214.41
+RPM 1450 Load 35 Actual 203 Pred 202.69
+RPM 1750 Load 55 Actual 258 Pred 251.8
+RPM 1850 Load 90 Actual 298 Pred 297.25
+Test MAE (W): 2.5003
+MAE RPM only (W): 13.0012
+MAE RPM + load (W): 2.5003
+RPM (800-1900, atau Ctrl+C): 1500
+Load % (0-100): 20
+Predicted power: 192.06 W
+--------------------------
+RPM (800-1900, atau Ctrl+C): 1500
+Load % (0-100): 50
+Predicted power: 222.85 W
+--------------------------
+RPM (800-1900, atau Ctrl+C): 1500
+Load % (0-100): 80
+Predicted power: 253.63 W
+--------------------------
+RPM (800-1900, atau Ctrl+C): 
 
-Skenario Beban Tetap dan RPM Berubah
-Jika kita membalik pengujian dengan mengunci beban di angka 50% dan memvariasikan nilai RPM (misalnya 1000, 1500, dan 1800), hasilnya adalah:  
+## Experiment D — Interactive Power Prediction on ESP32
 
-RPM 1000, Beban 50%: Prediksi daya ≈ 175.19 W  
-RPM 1500, Beban 50%: Prediksi daya ≈ 222.85 W  
-RPM 1800, Beban 50%: Prediksi daya ≈ 251.44 W  
+### 1. Tujuan
+Menguji model Multiple Linear Regression secara interaktif pada ESP32 menggunakan input RPM dan Load melalui Shell Thonny tanpa menggunakan sensor tambahan.
 
-> Pola perubahan: Prediksi daya juga menunjukkan peningkatan linear. Setiap kenaikan putaran motor sebesar 1 RPM (pada beban yang sama), daya listrik akan bertambah sekitar 0.095 W. Angka ini mewakili nilai koefisien RPM ($b_1$) pada model.
+### 2. Hasil Pengujian
+
+Pengujian dilakukan dengan mempertahankan RPM pada 1500 dan mengubah nilai Load.
+
+| RPM | Load (%) | Prediksi Daya (W) |
+|---:|---:|---:|
+| 1500 | 20 | 192.06 |
+| 1500 | 50 | 222.85 |
+| 1500 | 80 | 253.63 |
+
+### 3. Analisis
+Berdasarkan hasil pengujian, prediksi daya meningkat ketika nilai Load bertambah, sementara RPM dipertahankan tetap pada 1500.
+
+Pada Load 20%, daya yang diprediksi adalah 192.06 W. Ketika Load meningkat menjadi 50%, prediksi daya naik menjadi 222.85 W. Pada Load 80%, prediksi daya mencapai 253.63 W.
+
+Hasil tersebut menunjukkan bahwa model menggunakan informasi Load untuk menyesuaikan prediksi daya. Hubungan ini sesuai dengan koefisien Load yang bernilai positif pada model regresi.
+
+### 4. Kesimpulan
+Eksperimen D berhasil. ESP32 dapat menerima input RPM dan Load secara interaktif melalui Shell Thonny dan menghasilkan prediksi daya berdasarkan model yang telah dilatih. Hasil pengujian menunjukkan bahwa prediksi daya meningkat seiring bertambahnya Load pada RPM yang tetap.
+
+Pengujian ini memperlihatkan proses inferensi model machine learning pada mikrokontroler tanpa memerlukan sensor tambahan.
 
 ---
 
@@ -354,11 +519,55 @@ print("MAE test setelah outlier:", round(mae(
 **Pertanyaan E:** mengapa outlier pada *training set* dapat memengaruhi parameter dan MAE test? Mengapa outlier tidak boleh otomatis dibuang tanpa alasan domain yang jelas?  
 
 **jawab**  
-Pengaruh Outlier:  
-Algoritma regresi bekerja dengan meminimalkan error kuadrat (SSE). Outlier menghasilkan error yang sangat besar, sehingga algoritma terpaksa menarik garis regresi ke arah outlier tersebut. Akibatnya, parameter model melenceng dari data normal dan nilai MAE pada test set memburuk.  
+hasil Run
+>>> %Run -c $EDITOR_CONTENT
 
-Alasan Tidak Dibuang Otomatis:  
-Outlier belum tentu data yang salah; bisa jadi itu adalah fenomena fisik nyata yang kritis (seperti mesin overload atau anomali sistem). Membuangnya secara otomatis akan membuat kita kehilangan informasi penting mengenai batas operasional sistem yang sesungguhnya.
+MPY: soft reboot
+Coefficients for scaled features: [28.579964, 95.30816, 102.60946]
+Test predictions:
+RPM 950 Load 40 Actual 164 Pred 160.17
+RPM 1250 Load 65 Actual 213 Pred 214.41
+RPM 1450 Load 35 Actual 203 Pred 202.69
+RPM 1750 Load 55 Actual 258 Pred 251.8
+RPM 1850 Load 90 Actual 298 Pred 297.25
+Test MAE (W): 2.5003
+MAE RPM only (W): 13.0012
+MAE RPM + load (W): 2.5003
+MAE test sebelum outlier: 2.5003
+MAE test setelah outlier: 20.509
+RPM (800-1900, atau Ctrl+C): 
+
+## Experiment E — Outlier Study and Model Limitations
+
+### 1. Tujuan
+Mempelajari pengaruh outlier pada proses training Multiple Linear Regression serta mengamati perubahan akurasi prediksi pada test set.
+
+### 2. Metode Pengujian
+Model awal dilatih menggunakan dataset training yang terdiri dari 12 sampel. Selanjutnya, satu data sintetis ditambahkan ke training set:
+
+- RPM: 1400
+- Load: 50%
+- Power: 500 W
+
+Model kemudian dilatih ulang menggunakan dataset yang telah ditambahkan outlier. Kedua model dievaluasi menggunakan test set yang sama.
+
+### 3. Hasil Pengujian
+
+| Kondisi Model | MAE Test (W) |
+|---|---:|
+| Sebelum outlier | 2.5003 |
+| Setelah outlier | Isi berdasarkan output ESP32 |
+
+### 4. Analisis
+Outlier dapat memengaruhi koefisien regresi karena metode least squares berusaha meminimalkan jumlah kuadrat kesalahan. Data yang sangat berbeda dari pola umum dapat menarik model sehingga parameter regresi berubah.
+
+Perubahan parameter tersebut dapat memengaruhi prediksi pada test set dan mengubah nilai MAE. Besarnya pengaruh harus ditentukan berdasarkan hasil pengujian.
+
+Outlier tidak boleh langsung dihapus tanpa alasan yang jelas. Data tersebut mungkin merupakan kesalahan pencatatan, tetapi juga dapat menggambarkan kondisi nyata yang penting.
+
+### 5. Kesimpulan
+Eksperimen E digunakan untuk mengamati pengaruh outlier terhadap parameter model dan akurasi prediksi. Kesimpulan akhir mengenai perubahan MAE dibuat berdasarkan perbandingan hasil sebelum dan sesudah outlier ditambahkan.
+
 
 ## 5. Hasil acuan praktikum
 
